@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Idea App</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous" />
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/5f59ca6ad3.js" crossorigin="anonymous"></script>
+    <!-- Style CSS -->
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="ideas-bg-container">
+      <div class="container">
+        <div class="row">
+          <div class="col-12">
+            <h1 class="ideas-heading">Ideas</h1>
+            <h1 class="create-task-heading">
+              Create <span class="create-task-heading-subpart">Idea</span>
+            </h1>
+            <input type="text" id="ideaUserInput" class="idea-user-input" placeholder="What's your idea?"/>
+            <div class="dropdown" id="dropdownContainer"></div>
+            <button class="button" id="addIdeaButton">Add</button>
+            <h1 class="idea-items-heading">
+              My <span class="idea-items-heading-subpart">Ideas</span>
+            </h1>
+            <ul class="idea-items-container" id="ideaItemsContainer"></ul>
+            <button class="button" id="saveIdeaButton">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        let ideaItemsContainer = document.getElementById("ideaItemsContainer");
+        let addIdeaButton = document.getElementById("addIdeaButton");
+        let saveIdeaButton = document.getElementById("saveIdeaButton");
+        let userInputElement = document.getElementById("ideaUserInput");
+        let dropdownContainer = document.getElementById("dropdownContainer");
+      
+        // Getting the ideas from localstorage
+        function getIdeaListFromLocalStorage() {
+            let stringifiedIdeaList = localStorage.getItem("ideaList");
+            let parsedIdeaList = JSON.parse(stringifiedIdeaList);
+            if (parsedIdeaList === null) {
+                return [];
+            } else {
+                return parsedIdeaList;
+            }
+        }
+
+        let ideaList = getIdeaListFromLocalStorage();
+        let ideasCount = ideaList.length;
+        
+        // If user enters <>, showing the dropdown of previous ideas
+        userInputElement.addEventListener("input", function(event) {
+            let userInputValue = event.target.value;
+            let userInputValueLength = userInputValue.length;
+            let slicedInputValue = userInputValue.slice(userInputValueLength-2, userInputValueLength);
+            
+            // Clear the previous dropdown content
+            dropdownContainer.innerHTML = "";
+
+            if (slicedInputValue === '<>') {
+                for (let idea of ideaList) {
+                    dropdownContainer.style.display = "block";
+                    const optionElement = document.createElement("div");
+                    optionElement.textContent = idea.text;
+                    optionElement.classList.add("dropdown-option");
+                    optionElement.addEventListener("click", function() {
+                       userInputElement.value = userInputValue + idea.text;
+                       dropdownContainer.style.display = "none";
+                    });
+                    dropdownContainer.appendChild(optionElement);
+                    console.log(idea);
+                }
+            } else {
+                dropdownContainer.style.display = "none";
+                console.log(false);
+            }
+            
+        });
+
+        // Close the dropdown if user clicks outside
+        document.addEventListener("click", function(event) {
+            if (!dropdownContainer.contains(event.target)) {
+                dropdownContainer.style.display = "none";
+            }
+        });
+
+        // Onclicking the Save button, ideas will be stored in localstorage
+        saveIdeaButton.onclick = function() {
+           localStorage.setItem("ideaList", JSON.stringify(ideaList));
+        };
+        
+        // Onclicking the Add button, ideas will be added to my ideas
+        function onAddIdea() {
+            let userInputElement = document.getElementById("ideaUserInput");
+            let userInputValue = userInputElement.value;
+
+            if (userInputValue === "") {
+                alert("Enter Valid Text");
+                return;
+            }
+
+            ideasCount = ideasCount + 1;
+
+            let newIdea = {
+                text: userInputValue,
+                uniqueNo: ideasCount,
+                isChecked: false
+            };
+            ideaList.push(newIdea);
+            createAndAppendIdea(newIdea);
+            userInputElement.value = "";
+        }
+        
+        // Calling the onAddIdea function
+        addIdeaButton.onclick = function() {
+            onAddIdea();
+        };
+
+        // Onchanging the status
+        function onIdeaStatusChange(checkboxId, labelId, ideaId) {
+            let checkboxElement = document.getElementById(checkboxId);
+            let labelElement = document.getElementById(labelId);
+            labelElement.classList.toggle("checked");
+
+            let ideaObjectIndex = ideaList.findIndex(function(eachIdea) {
+                let eachIdeaId = "idea" + eachIdea.uniqueNo;
+
+                if (eachIdeaId === ideaId) {
+                return true;
+                } else {
+                return false;
+                }
+            });
+
+            let ideaObject = ideaList[ideaObjectIndex];
+
+            if(ideaObject.isChecked === true){
+                ideaObject.isChecked = false;
+            } else {
+                ideaObject.isChecked = true;
+            }
+
+        }
+        
+        // Deleting the ideas
+        function onDeleteIdea(ideaId) {
+            let ideaElement = document.getElementById(ideaId);
+            ideaItemsContainer.removeChild(ideaElement);
+
+            let deleteElementIndex = ideaList.findIndex(function(eachIdea) {
+                let eachIdeaId = "idea" + eachIdea.uniqueNo;
+                if (eachIdeaId === ideaId) {
+                return true;
+                } else {
+                return false;
+                }
+            });
+
+            ideaList.splice(deleteElementIndex, 1);
+        }
+
+        // Ideas will be appending to My ideas container
+        function createAndAppendIdea(idea) {
+            let ideaId = "idea" + idea.uniqueNo;
+            let checkboxId = "checkbox" + idea.uniqueNo;
+            let labelId = "label" + idea.uniqueNo;
+            
+            // Creating the list element
+            let ideaElement = document.createElement("li");
+            ideaElement.classList.add("idea-item-container", "d-flex", "flex-row");
+            ideaElement.id = ideaId;
+            ideaItemsContainer.appendChild(ideaElement);
+
+            // Creating the checkbox element
+            let inputElement = document.createElement("input");
+            inputElement.type = "checkbox";
+            inputElement.id = checkboxId;
+            inputElement.checked = idea.isChecked;
+
+            // Calling the onIdeaStatusChange function
+            inputElement.onclick = function () {
+                onIdeaStatusChange(checkboxId, labelId, ideaId);
+            };
+
+            inputElement.classList.add("checkbox-input");
+            ideaElement.appendChild(inputElement);
+
+            let labelContainer = document.createElement("div");
+            labelContainer.classList.add("label-container", "d-flex", "flex-row");
+            ideaElement.appendChild(labelContainer);
+
+            // Creating the label element
+            let labelElement = document.createElement("label");
+            labelElement.setAttribute("for", checkboxId);
+            labelElement.id = labelId;
+            labelElement.classList.add("checkbox-label");
+            labelElement.textContent = idea.text;
+            if (idea.isChecked === true) {
+                labelElement.classList.add("checked");
+            }
+            labelContainer.appendChild(labelElement);
+
+            let deleteIconContainer = document.createElement("div");
+            deleteIconContainer.classList.add("delete-icon-container");
+            labelContainer.appendChild(deleteIconContainer);
+
+            let deleteIcon = document.createElement("i");
+            deleteIcon.classList.add("far", "fa-trash-alt", "delete-icon");
+
+            // Calling the onDeleteIdea function
+            deleteIcon.onclick = function () {
+                onDeleteIdea(ideaId);
+            };
+
+            deleteIconContainer.appendChild(deleteIcon);
+        }
+        
+        // Looping through ideaList and calling the createAndAppendIdea function
+        for (let idea of ideaList) {
+            createAndAppendIdea(idea);
+        }
+    </script>
+  </body>
+</html>
